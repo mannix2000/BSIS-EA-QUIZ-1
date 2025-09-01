@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BSIS Exam — Enterprise Architecture</title>
+<style>
+  body{font-family:Arial,sans-serif;margin:0;padding:0;background:#f6f8fb;color:#0f172a;}
+  header{background:#fff;padding:16px;display:flex;align-items:center;gap:12px;box-shadow:0 1px 6px rgba(0,0,0,.1);}
+  header h1{margin:0;font-size:1.2rem;} header .timer{margin-left:auto;padding:8px 12px;background:#ffe5e5;color:#b00020;font-weight:700;border-radius:50px;}
+  main{max-width:900px;margin:20px auto;padding:12px;}
+  .card{background:#fff;padding:16px;border-radius:12px;box-shadow:0 4px 12px rgba(0,0,0,.05);margin-bottom:12px;}
+  label{display:block;margin:8px 0 4px;font-weight:600;}
+  select,input[type=text]{width:100%;padding:8px;border-radius:6px;border:1px solid #ccc;}
+  button{background:#1f6feb;color:#fff;border:none;padding:10px 16px;border-radius:8px;font-weight:700;cursor:pointer;}
+  button.secondary{background:#eef2ff;color:#1f6feb;}
+  .hidden{display:none!important;}
+  .muted{color:#6b7280;font-size:.9rem;}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>BSIS Exam — Enterprise Architecture</h1>
+  <div class="timer" id="timer">30:00</div>
+</header>
+
+<main>
+
+  <!-- Access Code Section -->
+  <section class="card" id="accessCodeSection">
+    <label>Enter Exam Access Code:</label>
+    <input type="text" id="examCodeInput" placeholder="Enter code here">
+    <button type="button" id="examCodeBtn">Start Exam</button>
+    <p id="codeError" class="muted" style="color:red; display:none;">Incorrect code. Please try again.</p>
+  </section>
+
+  <form id="examForm" class="card hidden" autocomplete="off">
+    <label>Student Name</label>
+    <input type="text" id="studentName" name="studentName">
+
+    <hr>
+
+    <!-- Identification Questions (Scrambled) -->
+    <label>1. A structured representation of all enterprise processes, applications, and IT infrastructure is known as an ________.</label>
+    <input type="text" name="q5">
+
+    <label>2. The component of EA that defines the different levels of architecture, such as business, application, data, and technology.</label>
+    <input type="text" name="q3">
+
+    <label>3. List one risk associated with poor implementation of Enterprise Architecture.</label>
+    <input type="text" name="q4">
+
+    <label>4. Name one commonly used Enterprise Architecture framework.</label>
+    <input type="text" name="q2">
+
+    <label>5. The discipline that defines how an organization’s structure, processes, information, and technology align to achieve its strategy.</label>
+    <input type="text" name="q1">
+
+    <hr>
+
+    <!-- Multiple Choice Questions (Scrambled & Fixed with Options) -->
+    <label>6. Which of the following is considered a domain or layer of Enterprise Architecture?</label>
+    <select name="q8">
+      <option value="">Select answer</option>
+      <option value="A">Marketing domain</option>
+      <option value="B">Application domain</option>
+      <option value="C">Employee satisfaction domain</option>
+      <option value="D">Physical office domain</option>
+    </select>
+
+    <label>7. Which EA framework is mostly applied in large organizations and government agencies?</label>
+    <select name="q7">
+      <option value="">Select answer</option>
+      <option value="A">TOGAF</option>
+      <option value="B">COBIT</option>
+      <option value="C">ITIL</option>
+      <option value="D">Six Sigma</option>
+    </select>
+
+    <label>8. Enterprise Architecture can generate artifacts. Which of the following are considered artifacts?</label>
+    <select name="q10">
+      <option value="">Select answer</option>
+      <option value="A">Process models</option>
+      <option value="B">Organizational charts</option>
+      <option value="C">Data flow diagrams</option>
+      <option value="D">All of the above</option>
+    </select>
+
+    <label>9. What is a common myth about Enterprise Architecture?</label>
+    <select name="q9">
+      <option value="">Select answer</option>
+      <option value="A">It can predict all business risks</option>
+      <option value="B">It aligns IT and business</option>
+      <option value="C">It helps in decision-making</option>
+      <option value="D">It provides standardized documentation</option>
+    </select>
+
+    <label>10. One of the primary values of Enterprise Architecture is:</label>
+    <select name="q6">
+      <option value="">Select answer</option>
+      <option value="A">Reducing the workforce</option>
+      <option value="B">Aligning IT with business strategy</option>
+      <option value="C">Eliminating all business processes</option>
+      <option value="D">Outsourcing IT completely</option>
+    </select>
+
+    <div style="margin-top:14px;display:flex;gap:8px;align-items:center">
+      <button type="submit" id="submitBtn">Submit Answers</button>
+      <button type="button" class="secondary" id="downloadBtn" disabled>Download Answers (.txt)</button>
+      <div style="margin-left:auto" class="muted">Auto-score enabled — Total = 10 pts</div>
+    </div>
+  </form>
+
+  <section id="result" class="card hidden">
+    <h3>✅ Answers Submitted</h3>
+    <p class="muted">Show this screen to your instructor or download the answers file.</p>
+    <p><strong>Student:</strong> <span id="resName"></span></p>
+    <p><strong>Time left:</strong> <span id="resTime"></span></p>
+    <p><strong>Auto-score:</strong> <span id="totalScore"></span> / 10</p>
+    <ul id="breakdown"></ul>
+    <pre id="savedAnswers"></pre>
+    <button type="button" id="reopenBtn">Reopen Exam (Password Required)</button>
+  </section>
+</main>
+
+<script>
+// ----------------- SCRIPT -----------------
+const DURATION_MINUTES=30;
+const form=document.getElementById('examForm');
+const timerEl=document.getElementById('timer');
+const result=document.getElementById('result');
+const resName=document.getElementById('resName');
+const resTime=document.getElementById('resTime');
+const totalScoreEl=document.getElementById('totalScore');
+const breakdownEl=document.getElementById('breakdown');
+const savedAnswers=document.getElementById('savedAnswers');
+const downloadBtn=document.getElementById('downloadBtn');
+
+// Access code elements
+const accessCodeSection = document.getElementById('accessCodeSection');
+const examCodeInput = document.getElementById('examCodeInput');
+const examCodeBtn = document.getElementById('examCodeBtn');
+const codeError = document.getElementById('codeError');
+const CORRECT_CODE = "EA2025NOW"; // Access code
+const REOPEN_PASSWORD = "REOPEN123"; // Password to reopen exam
+
+let endTime=null;
+let timerInterval=null;
+
+// Correct answers
+const correctAnswers={
+  q1:'Enterprise Architecture',
+  q2:'TOGAF',
+  q3:'Architecture Layers',
+  q4:'Overly complex models',
+  q5:'Enterprise Architecture Repository',
+  q6:'B',
+  q7:'A',
+  q8:'B',
+  q9:'A',
+  q10:'D'
+};
+
+// ---------- Check submission state on load ----------
+window.addEventListener('load', () => {
+    if(localStorage.getItem('examSubmitted') === 'true') {
+        form.classList.add('hidden');
+        accessCodeSection.style.display = 'none';
+        result.classList.remove('hidden');
+    }
+});
+
+// ---------- Start Exam with Access Code ----------
+examCodeBtn.addEventListener('click', () => {
+  const enteredCode = examCodeInput.value.trim();
+  if (enteredCode === CORRECT_CODE) {
+    accessCodeSection.style.display = "none";
+    form.classList.remove('hidden');
+    startTimer();
+  } else {
+    codeError.style.display = "block";
+    examCodeInput.value = "";
+  }
+});
+
+// ---------- Timer Function ----------
+function startTimer() {
+  endTime=Date.now()+DURATION_MINUTES*60*1000;
+  function fmt(ms){const total=Math.max(0,Math.floor(ms/1000));const m=Math.floor(total/60);const s=total%60;return m+':' + (s<10?'0'+s:s);}
+  function updateTimer(){const remaining=endTime-Date.now();timerEl.textContent=fmt(remaining);if(remaining<=0){clearInterval(timerInterval);autoSubmit('Time is up');}}
+  timerInterval=setInterval(updateTimer,300); updateTimer();
+}
+
+// ---------- Auto-score ----------
+function autoScoreAndShow(data,reason){
+  let total=0;
+  let breakdown=[];
+  let output='== Enterprise Architecture Exam ==\nStudent: '+(data.get('studentName')||'(no name)')+'\nReason: '+reason+'\n\n';
+  for(let i=1;i<=10;i++){
+    let key='q'+i;
+    let ans=data.get(key)||'';
+    output+='Q'+i+': '+ans+'\n';
+    let score=0;
+    if(correctAnswers[key]!==undefined){score=(ans.trim().toLowerCase()===correctAnswers[key].toLowerCase())?1:0;}
+    else{if(ans.trim().length>0) score=1;}
+    total+=score;
+    breakdown.push({k:'Q'+i,v:score+'/1'});
+  }
+  form.classList.add('hidden');
+  result.classList.remove('hidden');
+  resName.textContent=data.get('studentName')||'(no name)';
+  resTime.textContent=timerEl.textContent;
+  totalScoreEl.textContent=total+'/10';
+  breakdownEl.innerHTML='';breakdown.forEach(it=>{const li=document.createElement('li');li.textContent=it.k+': '+it.v;breakdownEl.appendChild(li);});
+  savedAnswers.textContent=output+'\nTOTAL SCORE: '+total+'/10';
+  downloadBtn.disabled=false;
+  clearInterval(timerInterval);
+  window.__paOutput=output;
+
+  localStorage.setItem('examSubmitted','true');
+}
+
+// ---------- Submit ----------
+form.addEventListener('submit',e=>{e.preventDefault();autoSubmit('Submitted by user');});
+function autoSubmit(reason){const data=new FormData(form);if(!data.get('studentName')) data.set('studentName','(no name)');autoScoreAndShow(data,reason);}
+
+// ---------- Download ----------
+downloadBtn.addEventListener('click',function(){
+  const blob=new Blob([window.__paOutput||savedAnswers.textContent],{type:'text/plain'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download=(document.getElementById('studentName').value||'student')+'_EA_exam.txt';
+  document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(a.href);
+});
+
+// ---------- Anti-copy ----------
+['studentName','q1','q2','q3','q4','q5','q6','q7','q8','q9','q10'].forEach(name=>{
+  const el=document.getElementsByName(name)[0];
+  ['paste','copy','cut','contextmenu','selectstart'].forEach(ev=>el.addEventListener(ev,e=>e.preventDefault()));
+});
+document.addEventListener('contextmenu',e=>e.preventDefault());
+window.addEventListener('keydown',e=>{if(e.ctrlKey||e.metaKey){if(['c','v','x','s','u','p'].includes(e.key.toLowerCase())){e.preventDefault();return false;}}if(e.key==='F12'){e.preventDefault();return false;}});
+document.querySelectorAll('label,h1,h3,p').forEach(el=>el.style.userSelect='none');
+
+// ---------- Auto-reset on leave ----------
+let hasLeftExam=false;
+function resetExamOnLeave(){if(!hasLeftExam){hasLeftExam=true;form.reset();alert('You left the exam. All answers have been reset. Timer continues.');window.scrollTo({top:0,behavior:'instant'});}}
+document.addEventListener('visibilitychange',()=>{if(document.hidden) resetExamOnLeave();});
+window.addEventListener('blur',resetExamOnLeave);
+
+// ---------- Reopen Exam Button ----------
+const reopenBtn = document.getElementById('reopenBtn');
+reopenBtn.addEventListener('click', () => {
+    let entered = prompt("Enter password to reopen the exam:");
+    if (entered === REOPEN_PASSWORD) {
+        localStorage.removeItem('examSubmitted');
+        form.reset(); 
+        result.classList.add('hidden');
+        form.classList.remove('hidden');
+        startTimer();
+    } else {
+        alert("Incorrect password. Exam cannot be reopened.");
+    }
+});
+</script>
+
+</body>
+</html>
